@@ -38,7 +38,9 @@ uvx --from git+https://github.com/zhe97396-tech/ghstars ghstars --help
 uv tool install git+https://github.com/zhe97396-tech/ghstars
 
 # MCP server support (optional)
-uv tool install "ghstars[mcp]"     # or: pip install "ghstars[mcp]"
+uv tool install "ghstars[mcp] @ git+https://github.com/zhe97396-tech/ghstars.git"
+# pip 等价写法
+pip install "ghstars[mcp] @ git+https://github.com/zhe97396-tech/ghstars.git"
 ```
 
 Requires Python ≥ 3.11 (uses `tomllib`) and nothing else.
