@@ -26,6 +26,12 @@ classifiers = [
 [project.optional-dependencies]
 mcp = ["mcp>=1.2"]
 
+[project.urls]
+Homepage = "https://github.com/zhe97396-tech/ghstars"
+Repository = "https://github.com/zhe97396-tech/ghstars"
+Issues = "https://github.com/zhe97396-tech/ghstars/issues"
+Changelog = "https://github.com/zhe97396-tech/ghstars/blob/master/CHANGELOG.md"
+
 [project.scripts]
 ghstars = "ghstars.cli:main"
 

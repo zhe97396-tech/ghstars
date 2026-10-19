@@ -8,6 +8,16 @@
 
 from __future__ import annotations
 
-__version__ = "0.1.0"
-
 __all__ = ["__version__"]
+
+# 版本号唯一来源 = pyproject.toml（安装后从包元数据读，避免两处手改漂移）
+try:
+    from importlib.metadata import PackageNotFoundError
+    from importlib.metadata import version as _pkg_version
+
+    try:
+        __version__ = _pkg_version("ghstars")
+    except PackageNotFoundError:  # 直接跑源码（未安装）时
+        __version__ = "0.1.0"
+except Exception:  # pragma: no cover - 极端环境兜底
+    __version__ = "0.1.0"

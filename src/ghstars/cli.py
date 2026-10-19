@@ -373,6 +373,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _ensure_utf8_console()
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
@@ -380,3 +381,19 @@ def main(argv: list[str] | None = None) -> int:
     except KeyboardInterrupt:
         print("\n已中断", file=sys.stderr)
         return 130
+
+
+def _ensure_utf8_console() -> None:
+    """Windows 控制台默认 GBK（cp936）时，中文输出会抛 UnicodeEncodeError。
+
+    不改全局 locale，只把标准流切到 UTF-8 并对无法编码的字符降级，
+    保证 `ghstars search` 在 cmd.exe / PowerShell 里也不会崩。
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass

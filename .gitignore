@@ -12,3 +12,5 @@ venv/
 index.db
 index.db-*
 config.toml
+# 本机定制版文档（含真实路径，绝不入库）
+.local/

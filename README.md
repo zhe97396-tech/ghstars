@@ -1,6 +1,13 @@
 # ghstars
 
+[![tests](https://github.com/zhe97396-tech/ghstars/actions/workflows/tests.yml/badge.svg)](https://github.com/zhe97396-tech/ghstars/actions/workflows/tests.yml)
+[![python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
+[![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![version](https://img.shields.io/badge/version-0.1.0-informational)](CHANGELOG.md)
+
 **Your GitHub stars, as a local searchable knowledge base.**
+
+> [中文说明](README.zh-CN.md) · [使用指南 · HTML](docs/guide.zh.html) · [Changelog](CHANGELOG.md)
 
 Turns your starred repos into plain Markdown files (Obsidian-friendly) plus a
 zero-dependency SQLite/FTS5 index — so you (and any AI agent you use) can answer
@@ -182,6 +189,30 @@ real changes and Obsidian shows a clean graph.
 - **Archiving is idempotent.** `type: github-star-archived` is matched as a whole value
   and rewritten exactly once; substring replacement produced
   `-archived-archived-...` and broke type-based weighting.
+
+## Platforms
+
+| Platform | Status |
+|---|---|
+| Windows | ✅ tested (console forced to UTF-8; cmd/PowerShell safe) |
+| macOS | ✅ by design — stdlib only, config in `~/.config` (honors `XDG_CONFIG_HOME`) |
+| Linux | ✅ by design — same; `gh auth token` needs `gh` on PATH |
+
+The only platform branch is the config directory (`%APPDATA%` vs `$XDG_CONFIG_HOME`).
+
+## Maintenance
+
+| Change | Where | How it takes effect |
+|---|---|---|
+| Search / sync / classification behaviour | `src/ghstars/` | `uv tool install --reinstall git+…` (or `-e .` while developing) |
+| MCP tools | `TOOLS` in `mcp_server.py` | same, then restart the host |
+| Skill wording | `skills/ghstars/SKILL.md` | `python scripts/sync_skill.py` |
+| Version | `version` in `pyproject.toml` only | `__version__` follows automatically; then `git tag` |
+| Index schema | `index.py` | users run `ghstars index` (the index is a cache — no migrations) |
+
+**Compatibility contract**: the Markdown frontmatter fields (`repo`, `type`, `category`,
+`tags`, `topics`, `starred_at`) are public API. Renaming one is a major version and needs a
+migration script. The index can change freely — it is rebuildable.
 
 ## Known limits
 

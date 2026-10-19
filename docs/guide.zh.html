@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ghstars 使用指南 · v0.1.0</title>
+<style>
+  :root{
+    --bg:#fbfbfa; --fg:#1f2328; --muted:#5b6570; --line:#e3e5e8;
+    --card:#fff; --code-bg:#f4f5f7; --accent:#2f6feb; --accent-soft:#eaf1ff;
+    --ok:#1a7f37; --warn:#9a6700; --warn-bg:#fff8e5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f1216; --fg:#e6e9ee; --muted:#9aa4b1; --line:#232a33;
+      --card:#161b22; --code-bg:#1c232c; --accent:#6ea8ff; --accent-soft:#152238;
+      --ok:#4ac26b; --warn:#d4a72c; --warn-bg:#2a2213;
+    }
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  .wrap{max-width:960px;margin:0 auto;padding:48px 24px 96px}
+  header h1{font-size:32px;margin:0 0 8px;letter-spacing:-.02em}
+  .sub{color:var(--muted);margin:0 0 4px}
+  .meta{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 32px}
+  .chip{
+    font-size:13px;padding:3px 10px;border:1px solid var(--line);border-radius:99px;
+    color:var(--muted);background:var(--card)
+  }
+  .chip b{color:var(--fg);font-weight:600}
+  h2{font-size:22px;margin:48px 0 12px;padding-top:16px;border-top:1px solid var(--line)}
+  h3{font-size:17px;margin:28px 0 8px}
+  p{margin:10px 0}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:var(--code-bg);padding:.15em .4em;border-radius:4px;font-size:.9em;
+    font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+  pre{background:var(--code-bg);padding:14px 16px;border-radius:10px;overflow:auto;font-size:14px;
+    line-height:1.6;border:1px solid var(--line)}
+  pre code{background:none;padding:0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:13px;text-transform:none}
+  tr:last-child td{border-bottom:none}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0}
+  .note{border-left:3px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+  .warn{border-left:3px solid var(--warn);background:var(--warn-bg);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+  .flow{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap;margin:18px 0}
+  .box{flex:1 1 180px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .box b{display:block;margin-bottom:4px}
+  .box span{color:var(--muted);font-size:13px}
+  .arrow{align-self:center;color:var(--muted);font-size:20px;padding:0 2px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:720px){.cols{grid-template-columns:1fr}}
+  ul{padding-left:22px;margin:10px 0}
+  li{margin:5px 0}
+  .kbd{font-size:12px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 4px;color:var(--muted)}
+  footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:13.5px}
+  .toc{columns:2;column-gap:28px;font-size:14.5px}
+  @media (max-width:720px){.toc{columns:1}}
+  .toc a{display:block;padding:2px 0;color:var(--muted)}
+  .toc a:hover{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>ghstars 使用指南</h1>
+  <p class="sub">把 GitHub 星标变成本地可检索的知识库 —— 命令行、MCP、skill 三入口，一份内核。</p>
+  <div class="meta">
+    <span class="chip">版本 <b>v0.1.0</b></span>
+    <span class="chip">更新 <b>2026-10-20</b></span>
+    <span class="chip">Python <b>≥3.11</b></span>
+    <span class="chip">依赖 <b>零第三方</b></span>
+    <span class="chip"><b>Windows</b> 已实测 · macOS/Linux 设计支持</span>
+  </div>
+</header>
+
+<div class="card">
+  <b>这份文档解决什么</b>
+  <p style="margin-bottom:0">你的收藏已经躺在本地知识库里。这份指南讲清三件事：
+  ①怎么用最快的方式查到「我收藏过什么」；②三种入口（CLI / MCP / skill）分别装在哪、怎么调；
+  ③以后改了代码或换了 Agent，怎么维护。命令示例都是通用写法，把路径换成本机的即可。</p>
+</div>
+
+<h2 id="toc">目录</h2>
+<div class="toc">
+  <a href="#start">① 30 秒上手</a>
+  <a href="#arch">② 它是怎么搭起来的</a>
+  <a href="#entry">③ 三个入口：CLI / MCP / skill</a>
+  <a href="#where">④ 装在哪、文件在哪</a>
+  <a href="#cmd">⑤ 命令速查</a>
+  <a href="#scene">⑥ 六个日常场景</a>
+  <a href="#maint">⑦ 维护与升级</a>
+  <a href="#trouble">⑧ 排错</a>
+</div>
+
+<h2 id="start">① 30 秒上手</h2>
+<pre><code>ghstars doctor                 # 自检：token / 目录 / 索引 / LLM 是否就绪
+ghstars search "视频制作"       # 查你 star 过的项目
+ghstars stats                  # 看总量与分类分布</code></pre>
+<p>输出形如：</p>
+<pre><code>「视频制作」命中 3 条
+
+1. acme/video-kit   ★1234   [tools-utilities]   rel=4.2
+   把长视频自动切成短视频并批量导出…
+   tags: 视频剪辑, 自动化剪辑, 短视频制作
+   &lt;你的笔记目录&gt;/github-stars/tools-utilities/acme-video-kit.md</code></pre>
+<div class="note"><code>rel</code> 是排序分，不是质量评分：标签精确命中约 4.95，长描述里顺带出现约 1。
+用来判断「为什么这条排在前面」很方便。</div>
+
+<h2 id="arch">② 它是怎么搭起来的</h2>
+<div class="flow">
+  <div class="box"><b>Markdown 文件</b><span>唯一权威数据源，Obsidian 直接读</span></div>
+  <div class="arrow">→</div>
+  <div class="box"><b>ghstars 内核</b><span>拉取 / 分类 / 中文标签 / 打分</span></div>
+  <div class="arrow">→</div>
+  <div class="box"><b>SQLite 索引</b><span>派生缓存，删了能重建</span></div>
+</div>
+<div class="flow">
+  <div class="box"><b>CLI</b><span><code>ghstars search …</code><br>任何能跑命令的 Agent</span></div>
+  <div class="box"><b>MCP</b><span><code>ghstars mcp</code><br>Claude / Codex / Hermes / Cursor</span></div>
+  <div class="box"><b>Skill</b><span>SKILL.md<br>教 Agent 何时调 CLI</span></div>
+</div>
+<p><b>关键设计：</b>三个入口都是薄壳，逻辑只有一份。所以不会出现「命令行能查到、MCP 查不到」这种漂移。
+Markdown 是权威源 —— 索引坏了、机器换了，<code>ghstars index</code> 重建即可，数据不丢。</p>
+
+<h2 id="entry">③ 三个入口：CLI / MCP / skill</h2>
+
+<h3>CLI —— 最大公约数</h3>
+<pre><code>ghstars search "简历 优化" --json
+ghstars get owner/name --full
+ghstars search "小红书" -n 20 --category xiaohongshu --json</code></pre>
+<p>所有命令加 <code>--json</code> 都能拿到结构化结果；<b>进度日志走 stderr、结果走 stdout</b>，可以直接 <code>| jq</code> 或交给 Agent 解析。</p>
+
+<h3>MCP —— 给支持 MCP 的宿主用</h3>
+<p>服务器就是 <code>ghstars mcp</code>（stdio），暴露 5 个工具：</p>
+<table>
+  <tr><th>工具</th><th>作用</th></tr>
+  <tr><td><code>stars_search</code></td><td>按中文场景词/项目名/技术词检索收藏</td></tr>
+  <tr><td><code>stars_get</code></td><td>按 <code>owner/name</code> 看单个项目</td></tr>
+  <tr><td><code>stars_stats</code></td><td>总量、归档数、分类分布</td></tr>
+  <tr><td><code>stars_sync</code></td><td>同步最新 star（有副作用，支持 <code>dry_run</code>）</td></tr>
+  <tr><td><code>stars_reindex</code></td><td>手工改过文件后重建索引</td></tr>
+</table>
+<div class="cols">
+  <div class="card">
+    <b>Hermes</b>
+    <pre style="margin:10px 0 0"><code>mcp_servers:
+  ghstars:
+    command: "ghstars"
+    args: ["mcp"]
+    timeout: 120</code></pre>
+    <p style="margin:10px 0 0;color:var(--muted);font-size:13.5px">已写入本机 llm-wiki profile，<b>重启 Hermes 后</b>出现在工具列表（前缀 <code>mcp_ghstars_</code>）。</p>
+  </div>
+  <div class="card">
+    <b>OpenCode / Claude Code / Cursor</b>
+    <pre style="margin:10px 0 0"><code>// opencode.jsonc / ~/.claude.json
+"ghstars": {
+  "type": "local",
+  "command": ["ghstars", "mcp"]
+}</code></pre>
+    <p style="margin:10px 0 0;color:var(--muted);font-size:13.5px">OpenCode 已写入全局配置（<code>~/.config/opencode/opencode.jsonc</code>），重启生效。</p>
+  </div>
+</div>
+
+<h3>Skill —— 教 Agent「什么时候用」</h3>
+<p>安装位置：</p>
+<table>
+  <tr><th>宿主</th><th>路径</th></tr>
+  <tr><td>Claude Code</td><td><code>~/.claude/skills/ghstars/SKILL.md</code></td></tr>
+  <tr><td>Codex</td><td><code>~/.codex/skills/ghstars/SKILL.md</code></td></tr>
+</table>
+<p>已装好。以后改了话术，一条命令同步到所有宿主：</p>
+<pre><code>cd D:/Tools/ghstars
+python scripts/sync_skill.py          # 自动探测已存在的宿主目录
+python scripts/sync_skill.py --list   # 只看装到哪</code></pre>
+<p>skill 里写死了三条铁律，避免 Agent 乱来：只转述工具返回内容；<code>sync</code> 有副作用（用户没要求就别跑）；库里没有就直说「没有」，不要拿网络搜索冒充收藏。</p>
+
+<h2 id="where">④ 装在哪、文件在哪</h2>
+<table>
+  <tr><th>东西</th><th>位置</th><th>说明</th></tr>
+  <tr><td>全局命令</td><td><code>%USERPROFILE%\.local\bin\ghstars.exe</code></td><td>已在 PATH（macOS/Linux: <code>~/.local/bin/ghstars</code>）</td></tr>
+  <tr><td>程序本体</td><td><code>%APPDATA%\uv\tools\ghstars\</code></td><td>uv 的隔离 venv，升级不污染系统 Python</td></tr>
+  <tr><td>源码仓库</td><td><code>&lt;你克隆的位置&gt;</code></td><td>开发/改代码在这里，<code>uv tool install -e .</code> 时与上面的 venv 联动</td></tr>
+  <tr><td>配置（唯一）</td><td><code>%APPDATA%/ghstars/config.toml</code></td><td>store 路径、分类池、LLM；不含数据</td></tr>
+  <tr><td>检索索引</td><td>配置里 <code>store.index</code> 指定的位置</td><td>SQLite，可删可重建</td></tr>
+  <tr><td>星标数据</td><td><code>&lt;store.dir&gt;/github-stars/</code></td><td>你收藏的每个项目一个 Markdown，按分类分目录</td></tr>
+  <tr><td>Zvec 索引</td><td>知识库 <code>.llm-wiki/</code></td><td>知识库自带 RAG 用的，与 ghstars 索引互不干扰</td></tr>
+</table>
+<div class="warn"><b>两套索引不冲突，但要注意分工：</b>知识库里 <code>#search</code> 走的仍是 Zvec（语义检索）；
+ghstars 的 SQLite 索引服务于「查 star 收藏」和外部 Agent。同步后壳脚本会把两者都更新。</div>
+
+<h2 id="cmd">⑤ 命令速查</h2>
+<table>
+  <tr><th>命令</th><th>作用</th><th>常用参数</th></tr>
+  <tr><td><code>sync</code></td><td>拉取 → 去重 → 分类 → 中文标签 → 写盘 → 归档 → 重建索引</td><td><code>--dry-run</code> 只报差异<br><code>--limit N</code> 只处理 N 个<br><code>--no-llm</code> 省钱</td></tr>
+  <tr><td><code>search "词"</code></td><td>加权检索（名称/标签/topics/中文描述/英文描述）</td><td><code>-n</code> 条数 · <code>--category</code> · <code>--include-archived</code> · <code>--json</code></td></tr>
+  <tr><td><code>get owner/name</code></td><td>单项目详情</td><td><code>--full</code> 打印完整 Markdown</td></tr>
+  <tr><td><code>list</code></td><td>按 star 数列出</td><td><code>--category</code> · <code>--limit</code></td></tr>
+  <tr><td><code>stats</code></td><td>统计</td><td><code>--json</code></td></tr>
+  <tr><td><code>export</code></td><td>导出 JSON / CSV</td><td><code>--format csv</code> · <code>--output 文件</code></td></tr>
+  <tr><td><code>index</code></td><td>重建索引</td><td>—</td></tr>
+  <tr><td><code>doctor</code></td><td>环境自检</td><td><code>--check-llm</code> 真发一次请求</td></tr>
+  <tr><td><code>mcp</code></td><td>以 MCP server 运行</td><td>—</td></tr>
+</table>
+
+<h2 id="scene">⑥ 六个日常场景</h2>
+
+<h3>场景 1：在终端查「我收藏了什么能剪视频的」</h3>
+<pre><code>ghstars search "视频剪辑" -n 5</code></pre>
+<p>中文标签会命中（比如「视频剪辑」），英文项目名也能命中（如 <code>acme/video-kit</code>）。2 个字的词（<code>剪辑</code>、<code>简历</code>）同样有效 —— 短词走 LIKE 兜底，不需要装分词器。</p>
+
+<h3>场景 2：同步最新 star</h3>
+<pre><code># 先看差异，不写盘、不调 LLM
+python3 scripts/github_stars_sync.py --dry-run
+
+# 确认后真同步（知识库根目录下执行）
+python3 scripts/github_stars_sync.py</code></pre>
+<p>或者在对话里发 <code>#stars</code>。流程：新增的项目读 README → 分类 → LLM 生成中文标签 → 写 Markdown；已取消 star 的标 <code>type: github-star-archived</code>（幂等，重复跑不会叠后缀）。</p>
+
+<h3>场景 3：在 Claude Code / Codex 里直接问</h3>
+<p>直接说人话即可，skill 会自动触发：</p>
+<pre><code>我之前收藏过一个自动发小红书的工具，叫什么？
+我 star 的项目里有没有能做 RAG 的？</code></pre>
+<p>Agent 会调 <code>ghstars search "小红书 自动发布" --json</code>，然后基于返回的项目名/标签/描述回答 —— 不会编造。</p>
+
+<h3>场景 4：在 Hermes 里用（重启后）</h3>
+<p>重启 Hermes 后，工具列表里会出现 <code>mcp_ghstars_stars_search</code> 等 5 个工具。一句话就能用：</p>
+<pre><code>帮我找一下收藏里做视频自动化的项目，只要 3 个</code></pre>
+
+<h3>场景 5：加一个新分类</h3>
+<pre><code># 1) 改配置（分类名 = 目录名）
+[categories]
+podcast = ["podcast", "audio", "tts"]
+
+# 2) 让存量项目按新规则重分类（可选）
+ghstars index            # 只重建索引，不动文件分类</code></pre>
+<div class="note">已有文件不会自动搬家：分类只在 <b>新增项目</b> 时决定。要整改存量，属于手工整理范畴（移动文件后记得 <code>ghstars index</code>，知识库侧还要跑 <code>entity_index.py --rebuild</code>）。</div>
+
+<h3>场景 6：给别的机器装一份</h3>
+<pre><code>uv tool install git+https://github.com/zhe97396-tech/ghstars
+ghstars init && ghstars doctor</code></pre>
+<p>同一份 Markdown 可以放进任何 git 仓库 / 网盘同步 —— 索引是本地的，不跟着走。</p>
+
+<h2 id="maint">⑦ 维护与升级</h2>
+<table>
+  <tr><th>你想改什么</th><th>改哪里</th><th>怎么生效</th></tr>
+  <tr><td>检索 / 同步 / 分类行为</td><td><code>src/ghstars/</code></td><td><code>uv tool install --reinstall git+…</code></td></tr>
+  <tr><td>MCP 工具</td><td><code>mcp_server.py</code> 的 <code>TOOLS</code></td><td>同上 + 宿主重启</td></tr>
+  <tr><td>Skill 话术</td><td><code>skills/ghstars/SKILL.md</code></td><td><code>python scripts/sync_skill.py</code></td></tr>
+  <tr><td>版本号</td><td>只改 <code>pyproject.toml</code></td><td><code>__version__</code> 自动跟随；再 <code>git tag vX.Y.Z</code></td></tr>
+  <tr><td>索引结构</td><td><code>index.py</code></td><td>用户侧 <code>ghstars index</code> 重建，不做迁移</td></tr>
+</table>
+<p><b>兼容性红线：</b>Markdown frontmatter 的字段（<code>repo</code> / <code>type</code> / <code>category</code> / <code>tags</code> / <code>topics</code> / <code>starred_at</code>）是公开契约 —— 改名等于 major 版本，必须带迁移脚本。索引怎么改都行，因为它是缓存。</p>
+<p><b>发布流程（三步）：</b>改 <code>version</code> → 在 <code>CHANGELOG.md</code> 记一条 → <code>git tag vX.Y.Z &amp;&amp; git push --tags</code>，然后 <code>gh release create</code>。</p>
+
+<h2 id="trouble">⑧ 排错</h2>
+<table>
+  <tr><th>现象</th><th>原因 / 解决</th></tr>
+  <tr><td><code>索引不存在</code></td><td>首次使用或索引被删：<code>ghstars index</code>（或先 <code>ghstars sync</code>）</td></tr>
+  <tr><td>标签全是空 / 没有中文描述</td><td>LLM 没配上：<code>ghstars doctor</code> 看 LLM 行；检查 <code>config.toml</code> 的 <code>[llm]</code> 与 <code>api_key_env</code> 指向的环境变量是否存在</td></tr>
+  <tr><td>MCP 宿主里看不到工具</td><td>改配置后<b>必须重启</b>宿主；<code>command</code> 用绝对路径更稳（<code>~/.local/bin/ghstars.exe</code>）</td></tr>
+  <tr><td>报 <code>ModuleNotFoundError: pydantic_core</code> / 加载到错误 mcp</td><td>宿主注入了 <code>PYTHONPATH</code>，用 <code>PYTHONPATH=""</code> 运行</td></tr>
+  <tr><td>Windows 控制台中文乱码</td><td>已内置 UTF-8 兜底；仍异常时 <code>set PYTHONIOENCODING=utf-8</code></td></tr>
+  <tr><td>GitHub 403 速率限制</td><td>配 token：<code>gh auth login</code> 或 <code>GITHUB_TOKEN</code>（匿名只有 60 次/小时）</td></tr>
+  <tr><td>删了 Markdown 但还能搜到</td><td>索引是缓存：<code>ghstars index</code> 重建</td></tr>
+</table>
+
+<footer>
+  <p>源码：<a href="https://github.com/zhe97396-tech/ghstars">github.com/zhe97396-tech/ghstars</a> ·
+  MIT License · 本机已装 v0.1.0</p>
+  <p>相关：<a href="https://github.com/zhe97396-tech/llm-wiki-copilot">llm-wiki-copilot</a>（知识库引擎，<code>#stars</code> 通过薄壳调用本工具）</p>
+</footer>
+
+</div>
+</body>
+</html>
