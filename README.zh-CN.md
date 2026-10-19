@@ -180,6 +180,14 @@ GitHub API（stars + README）
 - **归档幂等。** `type: github-star-archived` 整值匹配、只写一次；子串替换会造出
   `-archived-archived-...` 并破坏按 type 的权重表。
 
+## 隐私
+
+- **无遥测、无云端。** 唯一的网络请求是 GitHub API（读你自己的 star 列表）；配了 LLM 才会再请求你自己的模型端点。
+- **仓库里不含你的数据。** 星标、索引、同步状态、配置只存在于你配置的 `store.dir`；`.gitignore` 已排除
+  `index.db`、`config.toml`、`.sync_state.json`、`.local/`。
+- **文档不含个人数据。** 示例一律用占位符（`acme/video-kit`、`<你的笔记目录>`）。
+- **密钥可以不落文件。** 推荐用 `llm.api_key_env` 指向环境变量；GitHub token 走环境变量或 `gh auth token`。
+
 ## 平台支持
 
 | 平台 | 状态 | 说明 |

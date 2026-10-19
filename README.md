@@ -190,6 +190,16 @@ real changes and Obsidian shows a clean graph.
   and rewritten exactly once; substring replacement produced
   `-archived-archived-...` and broke type-based weighting.
 
+## Privacy
+
+- **No telemetry, no cloud.** The only network calls are to the GitHub API (to read *your*
+  star list) and, if you configure one, your own LLM endpoint.
+- **No data in this repo.** Your stars, index, sync state and config live only where you point
+  `store.dir`; `.gitignore` excludes `index.db`, `config.toml`, `.sync_state.json` and `.local/`.
+- **Docs contain no personal data.** Examples use placeholders (`acme/video-kit`, `<your notes dir>`).
+- **Secrets stay out of files when you choose so.** Prefer `llm.api_key_env` over inlining a key;
+  GitHub tokens are read from env or `gh auth token`.
+
 ## Platforms
 
 | Platform | Status |
