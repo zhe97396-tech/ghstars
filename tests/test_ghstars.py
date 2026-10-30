@@ -174,6 +174,35 @@ class RankingTests(unittest.TestCase):
         rows = index_mod.search(self.db, "Owner/BodyOnly")
         self.assertEqual(rows[0]["repo"], "Owner/BodyOnly")
 
+    # ── 2026-10-30 检索重构的回归用例 ──────────────────────────────
+
+    def test_match_labels_layer_evidence(self):
+        """整串命中标签 = phrase 层；只在描述里出现 = full 层。"""
+        rows = index_mod.search(self.db, "视频制作")
+        self.assertEqual(rows[0]["repo"], "Owner/Tagged")
+        self.assertEqual(rows[0]["match"], "phrase")
+        self.assertEqual(rows[1]["match"], "full")
+
+    def test_reordered_query_still_recalls(self):
+        """词序不同也要能召回（旧版整串匹配在这里返回 0 条）。"""
+        rows = index_mod.search(self.db, "制作视频")
+        self.assertTrue(rows, "「制作视频」应通过 bigram 召回含「视频制作」的项目")
+        repos = [r["repo"] for r in rows]
+        self.assertIn("Owner/BodyOnly", repos)
+        # 标签命中仍然强于描述命中
+        self.assertEqual(rows[0]["repo"], "Owner/Tagged")
+
+    def test_no_contiguous_phrase_but_full_bigrams(self):
+        """「视频制作流程」不是整串命中，但 bigram 全覆盖 → full 层。"""
+        rows = index_mod.search(self.db, "视频制作流程")
+        self.assertTrue(rows)
+        self.assertEqual(rows[0]["repo"], "Owner/BodyOnly")
+        self.assertEqual(rows[0]["match"], "full")
+
+    def test_unrelated_query_returns_empty(self):
+        """库里没有对应内容时返回空，而不是硬凑（旧版/大语料下会凑出噪声）。"""
+        self.assertEqual(index_mod.search(self.db, "读书笔记"), [])
+
 
 class CategoryTests(unittest.TestCase):
     def test_topics_win_over_description(self):

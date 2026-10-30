@@ -103,7 +103,7 @@ Env overrides: `GHSTARS_STORE`, `GHSTARS_INDEX`, `GHSTARS_GITHUB_USERNAME`,
 | Command | What it does |
 |---|---|
 | `sync` | Pull stars → dedupe → classify → Chinese tags → Markdown → archive unstarred → reindex |
-| `search "<q>"` | Weighted search over name / tags / topics / Chinese desc / English desc |
+| `search "<q>"` | Weighted search over name / tags / topics / Chinese desc / English desc. Chinese is split into 2-char bigrams (reordered queries still match); ranking = field weight × idf, tiered by evidence (`phrase` > `full` > `partial`)。结果带 `match` 字段，全是 `partial` 说明库里没有完全对口的项目 |
 | `get <owner/name>` | Full record for one repo (`--full` prints the Markdown) |
 | `list` | List by stars, filter `--category` |
 | `stats` | Counts per category, archived count, index location |

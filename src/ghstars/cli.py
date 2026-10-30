@@ -30,9 +30,12 @@ def _emit(data, as_json: bool, render=None) -> None:
 def _print_results(data: dict) -> None:
     results = data.get("results") or []
     print(f"「{data['query']}」命中 {len(results)} 条")
+    if results and all(r.get("match") == "partial" for r in results):
+        print("⚠️ 只找到弱相关（未覆盖全部关键词）——可能库里没有完全对应的项目")
     for i, item in enumerate(results, start=1):
         flag = " [已归档]" if item.get("archived") else ""
-        print(f"\n{i}. {item['repo']}{flag}   ★{item['stars']}   [{item['category']}]   rel={item.get('relevance')}")
+        weak = "  ⚠️弱相关" if item.get("match") == "partial" else ""
+        print(f"\n{i}. {item['repo']}{flag}   ★{item['stars']}   [{item['category']}]   rel={item.get('relevance')}{weak}")
         if item["description"]:
             print(f"   {item['description'][:160]}")
         if item["tags"]:
