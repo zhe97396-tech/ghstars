@@ -138,13 +138,11 @@ GitHub error · `3` LLM all-failed (files written without Chinese tags).
 ## Use it from AI agents
 
 **1. MCP (Claude Code / Codex / Hermes / Cursor …)** — `ghstars mcp` exposes
-`stars_search`, `stars_get`, `stars_stats`, `stars_sync`, `stars_reindex`.
-
-`stars_sync` returns the same report as the CLI (including the `llm` block above),
-so an agent can tell "synced 10 but every tag failed" from a clean run — no
-exception is raised and the MCP call itself still succeeds. MCP servers are
-long-lived child processes: after upgrading ghstars, **restart the host** for the
-new code to load.
+**read-only** tools: `stars_search`, `stars_get`, `stars_stats`. Writing (sync /
+index rebuild) is CLI-only on purpose: one write path, one place for the exit-3
+guardrail, and MCP has no exit-code semantics for "every tag failed".
+MCP servers are long-lived child processes: after upgrading ghstars, **restart the
+host** for the new code to load.
 
 ```jsonc
 // Claude Code: ~/.claude.json  →  "mcpServers"

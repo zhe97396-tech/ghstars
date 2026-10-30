@@ -120,7 +120,9 @@ ghstars search "剪视频" --json | jq -r '.results[].repo'
 
 ### 2. MCP（Claude Code / Codex / Hermes / Cursor…）
 
-`ghstars mcp` 暴露 5 个工具：`stars_search`、`stars_get`、`stars_stats`、`stars_sync`、`stars_reindex`。
+`ghstars mcp` 暴露 3 个**只读**工具：`stars_search`、`stars_get`、`stars_stats`。
+写入（同步 / 重建索引）只走 CLI：`ghstars sync` / `ghstars index` —— 写路径只留一个入口，
+护栏（exit 3 = LLM 全失败）也只有一处；MCP 没有退出码语义，容易把「标签全空」当成功。
 
 ```jsonc
 // Claude Code ~/.claude.json、Cursor、其他通用客户端

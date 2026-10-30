@@ -4,8 +4,12 @@
 
 ## [Unreleased]
 
+### Changed
+- **MCP 变为只读**（破坏性，0.1.0 → 0.2.0）：移除 `stars_sync` 与 `stars_reindex` 两个写工具，只保留 `stars_search` / `stars_get` / `stars_stats`。
+  原因：写入路径保留唯一入口，护栏（exit 3 = LLM 全失败）只需维护一处；MCP 没有退出码语义，agent 容易把「标签全空」当同步成功。同步与重建索引请用 CLI：`ghstars sync` / `ghstars index`。
+
 ### Added
-- **LLM 失败护栏**：`sync` 现在统计每次 LLM 调用（`llm.calls/ok/failed`），报告新增 `llm` 块；全部失败时 stderr 打印硬告警并**退出码 3**（部分失败仍是 0 + 告警），不再出现「标签全空但脚本装作成功」。MCP 的 `stars_sync` 同样返回该 `llm` 块（调用本身不抛异常）。
+- **LLM 失败护栏**：`sync` 现在统计每次 LLM 调用（`llm.calls/ok/failed`），报告新增 `llm` 块；全部失败时 stderr 打印硬告警并**退出码 3**（部分失败仍是 0 + 告警），不再出现「标签全空但脚本装作成功」。
 - 单元测试 19 → 23（新增 LLM 计数、末次错误、重置、`sync` 全失败标记用例）。
 
 ### Fixed

@@ -15,7 +15,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from . import config, github, index as index_mod, llm as llm_mod, sync as sync_mod
+from . import config, index as index_mod
 
 
 def _cfg() -> dict:
@@ -75,39 +75,10 @@ def stars_stats() -> str:
     return _dumps(index_mod.stats(config.index_path(_cfg())))
 
 
-def stars_sync(dry_run: bool = False, use_llm: bool = True, limit: int | None = None) -> str:
-    """把 GitHub 上最新 star 的项目同步到本地库（写文件，有副作用）。
-
-    流程：拉取 API → 与本地去重 → 分类 → 生成中文标签/描述 → 写 Markdown
-    → 归档已取消 star 的项目 → 重建索引。项目多时会比较慢，按需使用。
-
-    Args:
-        dry_run: 只报告新增/取消的数量，不写任何文件。
-        use_llm: 是否调用 LLM 生成中文标签与描述（关掉更快更省钱）。
-        limit: 本次最多处理多少个新项目。
-    """
-    cfg = _cfg()
-    try:
-        report = sync_mod.sync(
-            cfg,
-            use_llm=use_llm,
-            dry_run=dry_run,
-            limit=limit,
-            quiet=True,
-        )
-    except (ValueError, github.GitHubError) as exc:
-        return _dumps({"error": str(exc), "hint": getattr(exc, "hint", "")})
-    return _dumps(report)
-
-
-def stars_reindex() -> str:
-    """重建检索索引（手工编辑过 Markdown 文件，或删过文件后使用）。"""
-    cfg = _cfg()
-    info = index_mod.build(config.store_dir(cfg), config.index_path(cfg))
-    return _dumps(info)
-
-
-TOOLS = (stars_search, stars_get, stars_stats, stars_sync, stars_reindex)
+# 只读：写入（sync / reindex）只走 CLI，MCP 不暴露有副作用的工具。
+# 理由：写路径只留一个入口，护栏（exit 3 = LLM 全失败）就只有一处需要维护；
+# MCP 没有退出码语义，agent 容易把「标签全空」当成同步成功。
+TOOLS = (stars_search, stars_get, stars_stats)
 
 
 def build():
@@ -118,8 +89,9 @@ def build():
         server = Server(
             "ghstars",
             instructions=(
-                "本地 GitHub 星标知识库。查「我 star 过什么」用 stars_search；"
-                "看单个项目用 stars_get；同步最新 star 用 stars_sync（有副作用）。"
+                "本地 GitHub 星标知识库（只读）。查「我 star 过什么」用 stars_search；"
+                "看单个项目用 stars_get；看库概况用 stars_stats。"
+                "同步/重建索引不在 MCP 里，请让用户跑 CLI：ghstars sync / ghstars index。"
             ),
         )
     except ImportError:  # mcp 1.x

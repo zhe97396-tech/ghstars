@@ -18,6 +18,6 @@ try:
     try:
         __version__ = _pkg_version("ghstars")
     except PackageNotFoundError:  # 直接跑源码（未安装）时
-        __version__ = "0.1.0"
+        __version__ = "0.2.0"
 except Exception:  # pragma: no cover - 极端环境兜底
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"
