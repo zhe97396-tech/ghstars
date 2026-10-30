@@ -175,6 +175,14 @@ def cmd_sync(args) -> int:
         print(f"\n新增 {report['added']} / 跳过 {report['skipped']} / 归档 {report['archived']}")
         if report["pending"] and report["dry_run"]:
             print("待处理：" + ", ".join(report["pending"][:20]))
+        llm_info = report.get("llm") or {}
+        if llm_info.get("failed") and not llm_info.get("failed_all"):
+            print(f"⚠ LLM 部分失败：{llm_info['note']}", file=sys.stderr)
+    llm_info = report.get("llm") or {}
+    if llm_info.get("failed_all"):
+        # 全挂 = 数据已经写进去了但质量坏了（中文标签/描述全空），
+        # 退出码 3 让脚本/Agent 无法把它当成功吞掉（回归：2026-10-30 模型名漂移，10/10 标签静默为空）。
+        return 3
     return 0
 
 

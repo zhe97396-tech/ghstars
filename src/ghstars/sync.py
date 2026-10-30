@@ -19,6 +19,11 @@ def _log(message: str = "", *, quiet: bool = False) -> None:
         print(message, file=sys.stderr, flush=True)
 
 
+def _warn(message: str) -> None:
+    """必须让用户/调用方看见的告警：不受 quiet 抑制（stderr，不污染 --json 的 stdout）。"""
+    print(message, file=sys.stderr, flush=True)
+
+
 def sync(
     cfg: dict,
     *,
@@ -48,6 +53,7 @@ def sync(
     categories = cfg_categories(cfg)
     settings = llm_settings(cfg) if use_llm else {}
     llm_on = bool(use_llm and llm_mod.available(settings))
+    llm_mod.reset_stats()
 
     _log("=" * 52)
     _log(f"ghstars sync  user={user}")
@@ -111,6 +117,7 @@ def sync(
 
     target.mkdir(parents=True, exist_ok=True)
     state = store.load_sync_state(target)
+    tag_failed = 0
 
     if pending:
         _log(f"\n③ 处理 {len(pending)} 个新项目…")
@@ -137,6 +144,8 @@ def sync(
             if llm_on:
                 tags, chinese_desc = classify_mod.generate_tags(project, settings, readme)
                 _log(f"      标签：{', '.join(tags)}" if tags else "      ⚠ 标签生成失败，跳过")
+                if not tags:
+                    tag_failed += 1
                 if chinese_desc:
                     _log(f"      中文描述：{chinese_desc}")
             try:
@@ -170,5 +179,38 @@ def sync(
         _log(f"   已索引 {info['indexed']}/{info['files']} 个文件（{info['tokenizer']}）")
 
     store.write_index(target)
+
+    llm_stats = llm_mod.stats() if llm_on else {"calls": 0, "ok": 0, "failed": 0, "last_error": ""}
+    failed_all = bool(llm_on and llm_stats["calls"] and not llm_stats["ok"])
+    report["llm"] = {
+        "enabled": llm_on,
+        "calls": llm_stats["calls"],
+        "ok": llm_stats["ok"],
+        "failed": llm_stats["failed"],
+        "tag_failed": tag_failed,
+        "failed_all": failed_all,
+        "last_error": llm_stats["last_error"],
+        "note": "",
+    }
+    if llm_on and llm_stats["failed"]:
+        if failed_all:
+            report["llm"]["note"] = (
+                f"LLM 全部失败（{llm_stats['failed']} 次调用无一次成功），"
+                f"{tag_failed} 个项目已按英文描述入库、中文标签为空"
+            )
+            _warn(
+                f"\n⚠ LLM 全部失败：{llm_stats['failed']} 次调用无一次成功 —— {llm_stats['last_error']}"
+            )
+            _warn(f"  受影响：{tag_failed}/{report['added']} 个新项目无中文标签/描述（已按英文描述入库）")
+            _warn("  修好后补标签：备份并删除这些 md → 删 .sync_state.json 对应条目 → 重跑 sync")
+        else:
+            report["llm"]["note"] = (
+                f"LLM 部分失败（{llm_stats['failed']}/{llm_stats['calls']}），{tag_failed} 个项目无中文标签"
+            )
+            _warn(
+                f"\n⚠ LLM 部分失败：{llm_stats['failed']}/{llm_stats['calls']} 次调用失败 —— {llm_stats['last_error']}"
+            )
+            _warn(f"  受影响：{tag_failed} 个项目无中文标签/描述")
+
     _log("\n完成：" + f"新增 {report['added']} / 跳过 {report['skipped']} / 归档 {report['archived']}")
     return report

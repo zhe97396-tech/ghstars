@@ -118,10 +118,33 @@ stdout** — safe to pipe into `jq` or parse in an agent.
 Useful `sync` flags: `--dry-run` (report only, no writes, no LLM), `--limit N`,
 `--no-llm`, `--full` (ignore resume state).
 
+**LLM failure is not silent.** If the LLM endpoint is configured but every call
+fails (renamed model, dead key, network), `sync` still writes the Markdown but
+prints a hard warning to stderr and **exits 3** — the run is *not* a success.
+Partial failures exit 0 with a warning. The report carries the detail:
+
+```jsonc
+"llm": {
+  "enabled": true, "calls": 10, "ok": 0, "failed": 10,
+  "tag_failed": 10, "failed_all": true,
+  "last_error": "model=... HTTP 400: Upstream request failed: Model is unavailable",
+  "note": "LLM 全部失败（10 次调用无一次成功）..."
+}
+```
+
+Exit codes: `0` ok (or nothing to do) · `1` doctor found problems · `2` config /
+GitHub error · `3` LLM all-failed (files written without Chinese tags).
+
 ## Use it from AI agents
 
 **1. MCP (Claude Code / Codex / Hermes / Cursor …)** — `ghstars mcp` exposes
 `stars_search`, `stars_get`, `stars_stats`, `stars_sync`, `stars_reindex`.
+
+`stars_sync` returns the same report as the CLI (including the `llm` block above),
+so an agent can tell "synced 10 but every tag failed" from a clean run — no
+exception is raised and the MCP call itself still succeeds. MCP servers are
+long-lived child processes: after upgrading ghstars, **restart the host** for the
+new code to load.
 
 ```jsonc
 // Claude Code: ~/.claude.json  →  "mcpServers"

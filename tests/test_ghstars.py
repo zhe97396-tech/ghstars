@@ -220,5 +220,112 @@ class CategoryTests(unittest.TestCase):
         self.assertEqual(classify(project, categories), "other")
 
 
+class LlmGuardTests(unittest.TestCase):
+    """LLM 静默失败的护栏：计数器 + report.llm.failed_all。
+
+    回归背景（2026-10-30）：网关模型改名后 chat/completions 稳定 400，
+    标签全变空、脚本仍 exit 0，10 个项目静默入库无中文标签。
+    """
+
+    def setUp(self):
+        from ghstars import llm as llm_mod
+
+        llm_mod.reset_stats()
+        self.llm = llm_mod
+        self.settings = {
+            "base": "http://127.0.0.1:9/v1",
+            "key": "k",
+            "model": "m",
+            "timeout": 2,
+            "headers": {},
+        }
+
+    def test_ok_counter(self):
+        class _Resp:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+            def read(self):
+                import json as _json
+
+                return _json.dumps({"choices": [{"message": {"content": "你好"}}]}).encode()
+
+        import unittest.mock as mock
+
+        with mock.patch("urllib.request.urlopen", return_value=_Resp()):
+            self.assertEqual(self.llm.call_llm("hi", self.settings, max_tokens=5), "你好")
+        st = self.llm.stats()
+        self.assertEqual((st["calls"], st["ok"], st["failed"]), (1, 1, 0))
+
+    def test_failed_counter_and_last_error(self):
+        import unittest.mock as mock
+        import urllib.error
+        from email.message import Message
+
+        err = urllib.error.HTTPError(
+            "http://127.0.0.1:9/v1/chat/completions",
+            400,
+            "Bad Request",
+            Message(),
+            __import__("io").BytesIO(b'{"error":"Model is unavailable"}'),
+        )
+        with mock.patch("urllib.request.urlopen", side_effect=err):
+            self.assertEqual(self.llm.call_llm("hi", self.settings, max_tokens=5), "")
+        st = self.llm.stats()
+        self.assertEqual((st["calls"], st["ok"], st["failed"]), (1, 0, 1))
+        self.assertIn("400", st["last_error"])
+        self.assertIn("Model is unavailable", st["last_error"])
+
+    def test_reset_stats(self):
+        self.llm._stats.update({"calls": 3, "ok": 1, "failed": 2})
+        self.llm.reset_stats()
+        st = self.llm.stats()
+        self.assertEqual((st["calls"], st["ok"], st["failed"]), (0, 0, 0))
+
+    def test_sync_report_flags_failed_all(self):
+        """LLM 全挂时 report['llm']['failed_all'] 为真（CLI 据此 exit 3）。"""
+        import unittest.mock as mock
+
+        from ghstars import sync as sync_mod
+
+        cfg = {
+            "categories": {"other": []},
+            "llm": {"base": "http://127.0.0.1:9/v1", "model": "m", "api_key": "k", "timeout": 2},
+        }
+        project = {
+            "full_name": "acme/thing",
+            "name": "thing",
+            "owner": "acme",
+            "description": "a thing",
+            "topics": [],
+            "stars": 1,
+            "language": "Python",
+            "html_url": "https://github.com/acme/thing",
+            "starred_at": "2026-10-30",
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            with mock.patch.object(sync_mod.github, "fetch_stars", return_value=[project]), \
+                 mock.patch.object(sync_mod.github, "get_token", return_value=""), \
+                 mock.patch.object(sync_mod.github, "fetch_readme", return_value="readme"):
+                report = sync_mod.sync(
+                    cfg,
+                    store_override=tmp,
+                    username="acme",
+                    rebuild_index=False,
+                    quiet=True,
+                )
+        self.assertEqual(report["added"], 1)
+        self.assertTrue(report["llm"]["enabled"])
+        # 每个项目会调两次 LLM（分类兜底 + 标签生成），两次都失败
+        self.assertGreaterEqual(report["llm"]["calls"], 1)
+        self.assertEqual(report["llm"]["failed"], report["llm"]["calls"])
+        self.assertEqual(report["llm"]["tag_failed"], 1)
+        self.assertTrue(report["llm"]["failed_all"])
+        self.assertIn("LLM", report["llm"]["note"])
+
+
 if __name__ == "__main__":
     unittest.main()

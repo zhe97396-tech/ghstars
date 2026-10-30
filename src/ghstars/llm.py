@@ -26,6 +26,10 @@ BROWSER_UA = (
 OPENCODE_SESSION_HEADER = "x-opencode-session"
 
 _last_error = ""
+# 调用计数：让上层能区分「LLM 没配」与「LLM 配了但全挂」。
+# 背景：模型名/网关漂移时 chat/completions 会稳定 4xx，而标签只是变空，
+# 同步流程看起来完全成功 —— 没有计数器就只能靠人肉发现。
+_stats = {"calls": 0, "ok": 0, "failed": 0}
 
 
 def available(settings: dict) -> bool:
@@ -35,6 +39,15 @@ def available(settings: dict) -> bool:
 
 def last_error() -> str:
     return _last_error
+
+
+def stats() -> dict:
+    """本次进程内的 LLM 调用统计（calls / ok / failed + 最后一条错误）。"""
+    return {**_stats, "last_error": _last_error}
+
+
+def reset_stats() -> None:
+    _stats.update({"calls": 0, "ok": 0, "failed": 0})
 
 
 def resolve_model(model: str, base: str) -> str:
@@ -92,6 +105,7 @@ def call_llm(
     url = f"{settings['base']}/chat/completions"
     timeout = timeout or int(settings.get("timeout") or 60)
     _last_error = ""
+    _stats["calls"] += 1
 
     for model in candidate_models(settings.get("model", ""), settings.get("base", "")):
         body: dict = {
@@ -112,6 +126,7 @@ def call_llm(
                 payload = json.loads(resp.read().decode("utf-8"))
             content = (payload["choices"][0]["message"].get("content") or "").strip()
             if content:
+                _stats["ok"] += 1
                 return content
             _last_error = f"model={model} 返回空内容"
         except urllib.error.HTTPError as exc:  # 打印响应体，MissingSessionID 才看得见
@@ -124,5 +139,6 @@ def call_llm(
         except Exception as exc:
             _last_error = f"model={model}: {exc}"
 
+    _stats["failed"] += 1
     print(f"  ⚠ LLM 调用失败（{_last_error}）", file=sys.stderr)
     return ""

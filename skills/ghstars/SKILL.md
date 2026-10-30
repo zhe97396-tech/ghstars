@@ -35,8 +35,15 @@ ghstars sync --json                     # 同步（有副作用）
 5. 用户问"这个项目怎么样"时，`ghstars` 只有描述/标签/star 数 —— 别把它当成 README 全文。
    需要细节就 `ghstars get <repo> --full` 或去看仓库本身。
 
+6. **`sync` 退出码 3 = LLM 全部失败**（模型名/密钥/网关挂了）：文件已写但中文标签全空，
+   **不要当成功汇报**。检查 `report.llm.last_error`，修好配置后重跑（先备份并删除受影响 md、
+   删 `.sync_state.json` 对应条目），否则这些项目在中文检索里等于不存在。部分失败是 exit 0 +
+   `llm.failed > 0`，同样要如实告知用户"有几条没标签"。MCP 的 `stars_sync` 不会抛异常，
+   必须读返回里的 `llm.failed_all` 才看得出。
+
 ## 输出解读
 
 - `relevance`：字段加权分（标签精确命中 ≈4.95，长描述顺带出现 ≈1），**只用于排序，不是质量评分**。
+- `llm`：`{enabled, calls, ok, failed, tag_failed, failed_all, last_error, note}` —— 只有 `sync` 返回。
 - `archived: true`：用户已取消 star 的历史项目（默认不返回，除非 `--include-archived`）。
 - `path`：本地 Markdown 绝对路径，可直接读取原文。
