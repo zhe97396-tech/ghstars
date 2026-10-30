@@ -4,13 +4,16 @@
 
 ## [Unreleased]
 
-### Changed
-- **MCP 变为只读**（破坏性，0.1.0 → 0.2.0）：移除 `stars_sync` 与 `stars_reindex` 两个写工具，只保留 `stars_search` / `stars_get` / `stars_stats`。
+## [0.2.0] — 2026-10-30
+
+### Changed (breaking)
+- **MCP 变为只读**：移除 `stars_sync` 与 `stars_reindex` 两个写工具，只保留 `stars_search` / `stars_get` / `stars_stats`。
   原因：写入路径保留唯一入口，护栏（exit 3 = LLM 全失败）只需维护一处；MCP 没有退出码语义，agent 容易把「标签全空」当同步成功。同步与重建索引请用 CLI：`ghstars sync` / `ghstars index`。
 
 ### Added
 - **LLM 失败护栏**：`sync` 现在统计每次 LLM 调用（`llm.calls/ok/failed`），报告新增 `llm` 块；全部失败时 stderr 打印硬告警并**退出码 3**（部分失败仍是 0 + 告警），不再出现「标签全空但脚本装作成功」。
-- 单元测试 19 → 23（新增 LLM 计数、末次错误、重置、`sync` 全失败标记用例）。
+- **重新 star 自动恢复**：取消 star 后又重新 star 的项目，`sync` 会把页面从 `github-star-archived` 翻回活跃（`restored` / `restored_repos` 字段，幂等）；旧版归档单向，这些项目默认检索永远看不到。
+- 单元测试 19 → 24（新增 LLM 计数、末次错误、重置、全失败标记、归档恢复用例）。
 
 ### Fixed
 - **中文检索召回**：旧版把整段中文当一个检索词（`"视频制作"`），只有文档里连续出现这几个字才命中——实测「简历模板」「语音转文字」「知识库检索」「股票量化」「读书笔记」5 条常见查询直接 0 命中。现改为 **2 字滑窗 bigram** 切分，词序不同也能召回，仍不引入分词器（保持零依赖）。

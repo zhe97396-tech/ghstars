@@ -82,6 +82,31 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(third["normalized"], 1)
         self.assertIn("type: github-star-archived\n", path.read_text(encoding="utf-8"))
 
+    def test_restore_restarred_project(self):
+        path = store.write_project(self.root, PROJECT, "tools-utilities", ["x"], "")
+        existing = store.scan_existing(self.root)
+        store.archive_removed(existing, {"owner/demo"})
+        self.assertIn("type: github-star-archived", path.read_text(encoding="utf-8"))
+
+        first = store.restore_starred(existing, {"owner/demo", "owner/unknown"})
+        self.assertEqual(first["restored"], 1)
+        self.assertIn("type: github-star\n", path.read_text(encoding="utf-8"))
+        self.assertNotIn("archived", path.read_text(encoding="utf-8"))
+
+        # 幂等：已是活跃态 → 跳过，不写盘
+        second = store.restore_starred(existing, {"owner/demo"})
+        self.assertEqual(second["restored"], 0)
+        self.assertEqual(second["skipped"], 1)
+
+        # 历史脏后缀 → 直接归一为活跃
+        text = path.read_text(encoding="utf-8").replace(
+            "type: github-star", "type: github-star-archived-archived"
+        )
+        path.write_text(text, encoding="utf-8")
+        third = store.restore_starred(existing, {"owner/demo"})
+        self.assertEqual(third["normalized"], 1)
+        self.assertIn("type: github-star\n", path.read_text(encoding="utf-8"))
+
     def test_write_index_counts(self):
         store.write_project(self.root, PROJECT, "tools-utilities", ["x"], "")
         store.write_index(self.root)

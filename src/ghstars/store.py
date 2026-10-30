@@ -203,6 +203,41 @@ def archive_removed(existing: dict[str, Path], removed: set[str]) -> dict:
     return result
 
 
+def restore_starred(existing: dict[str, Path], restored: set[str]) -> dict:
+    """把「重新 star」的项目从归档恢复为活跃。**幂等**：非归档的跳过不写盘。
+
+    为什么需要：GitHub 上取消 star 后又重新 star 时，本地页面仍是
+    ``github-star-archived``；归档是单向的，默认检索永远看不到它
+    （2026-10-30 实测：nutlope/hallmark 仍在 star，但被标归档 → 默认搜不到）。
+    """
+    result = {"restored": 0, "normalized": 0, "skipped": 0, "failed": 0, "changed": []}
+    for repo in sorted(restored):
+        path = existing.get(repo)
+        if path is None:
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except Exception:
+            result["failed"] += 1
+            continue
+        match = _TYPE_LINE_RE.search(text)
+        if not match:
+            result["skipped"] += 1
+            continue
+        old_type = match.group(1)
+        if old_type == _ACTIVE_TYPE:
+            result["skipped"] += 1
+            continue
+        new_text = text[: match.start(1)] + _ACTIVE_TYPE + text[match.end(1):]
+        path.write_text(new_text, encoding="utf-8")
+        if old_type == _ARCHIVED_TYPE:
+            result["restored"] += 1
+        else:  # 历史脏后缀（-archived-archived…）直接归一为活跃
+            result["normalized"] += 1
+        result["changed"].append((repo, old_type, _ACTIVE_TYPE))
+    return result
+
+
 # ---------------------------------------------------------------- 索引与状态
 
 

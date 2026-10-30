@@ -77,9 +77,13 @@ def sync(
     # 每次都报成"取消 star"会让报告数字虚高（老脚本就踩过这个坑）。
     removed_pending = sorted(r for r in removed_repos if not store.is_archived(existing[r]))
     removed_already = len(removed_repos) - len(removed_pending)
+    # 反向：远端仍 star、本地却被标归档（取消后又重新 star）——归档是单向的，
+    # 不恢复的话这些项目默认检索永远看不到。
+    restored_pending = sorted(r for r in (remote & local) if store.is_archived(existing[r]))
     _log(
         f"   新增 {len(new_repos)} / 已有 {len(remote & local)} / 待归档 {len(removed_pending)}"
         + (f" / 已归档 {removed_already}" if removed_already else "")
+        + (f" / 待恢复 {len(restored_pending)}" if restored_pending else "")
     )
 
     pending = [s for s in stars if s["full_name"].lower() in new_repos]
@@ -101,12 +105,15 @@ def sync(
         "skipped": len(remote & local),
         "removed": len(removed_pending),
         "already_archived": removed_already,
+        "restored_pending": len(restored_pending),
         "added": 0,
         "archived": 0,
+        "restored": 0,
         "normalized": 0,
         "failures": [],
         "added_repos": [],
         "archived_repos": [],
+        "restored_repos": [],
         "pending": [p["full_name"] for p in pending],
     }
 
@@ -162,8 +169,14 @@ def sync(
                 state["processed"].append(full_name)
             store.save_sync_state(target, state)
 
+    if restored_pending:
+        _log(f"\n④ 恢复 {len(restored_pending)} 个重新 star 的项目（归档 → 活跃）…")
+        restore_result = store.restore_starred(existing, set(restored_pending))
+        report["restored"] = restore_result["restored"] + restore_result["normalized"]
+        report["restored_repos"] = [c[0] for c in restore_result["changed"]]
+
     if removed_pending:
-        _log(f"\n④ 归档 {len(removed_pending)} 个已取消 star 的项目…")
+        _log(f"\n⑤ 归档 {len(removed_pending)} 个已取消 star 的项目…")
         archive_result = store.archive_removed(existing, set(removed_pending))
         report["archived"] = archive_result["archived"]
         report["normalized"] = archive_result["normalized"]
@@ -172,7 +185,7 @@ def sync(
             _log(f"   归一（修复历史后缀叠加）：{archive_result['normalized']}")
 
     if rebuild_index:
-        _log("\n⑤ 重建检索索引…")
+        _log("\n⑥ 重建检索索引…")
         db = index_path(cfg, index_override)
         info = index_mod.build(target, db)
         report["index"] = info
